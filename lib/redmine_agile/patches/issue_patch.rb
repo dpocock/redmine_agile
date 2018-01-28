@@ -18,7 +18,7 @@
 # along with redmine_agile.  If not, see <http://www.gnu.org/licenses/>.
 
 require_dependency 'issue'
-require_dependency 'agile_data'
+require_dependency '/usr/share/redmine/plugins/redmine_agile/app/models/agile_data'
 
 module RedmineAgile
   module Patches

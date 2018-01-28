@@ -1,0 +1,32 @@
+
+1. Reconfigure the redmine package and it should make the plugin
+   available in all instances:
+
+     sudo dpkg-reconfigure redmine
+
+2. In the browser, log in to Redmine and go to
+
+     Administration -> Plugins -> Redmine Agile Plugin - Configure
+
+   Or browse to https://${YOUR_REDMINE_URL}/settings/plugin/redmine_agile
+
+   If an error page appears, check /var/log/redmine/default/production.log
+
+3. Select one of your projects in Redmine (or create one), go to
+
+     Settings -> Modules
+
+   Put a tick next to 'Agile' and click 'Save'
+
+4. Now you should see the 'Agile' tab, click it to see the agile board.
+
+5. On the main Project list page, click 'View All Issues'.  The list
+   of all issues in all projects appears.  On the right hand side-bar,
+   click the 'Agile Board' link.
+
+Resources
+---------
+
+https://wiki.debian.org/redmine
+https://wiki.debian.org/Teams/Ruby/Packaging
+

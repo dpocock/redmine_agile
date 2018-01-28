@@ -1,0 +1,7 @@
+app             /usr/share/redmine/plugins/redmine_agile
+assets          /usr/share/redmine/plugins/redmine_agile
+config          /usr/share/redmine/plugins/redmine_agile
+db              /usr/share/redmine/plugins/redmine_agile
+lib             /usr/share/redmine/plugins/redmine_agile
+test            /usr/share/redmine/plugins/redmine_agile
+init.rb         /usr/share/redmine/plugins/redmine_agile

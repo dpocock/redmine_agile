@@ -1,0 +1,25 @@
+Source: redmine-plugin-agile
+Section: ruby
+Priority: optional
+Maintainer: Debian Ruby Extras Maintainers <pkg-ruby-extras-maintainers@lists.alioth.debian.org>
+Build-Depends: debhelper (>= 9~),
+               gem2deb,
+               rake
+Standards-Version: 3.9.8
+Vcs-Git: https://github.com/dpocock/redmine_agile
+Vcs-Browser: https://github.com/dpocock/redmine_agile
+Homepage: https://www.redmine.org/plugins/redmine_agile
+Testsuite: autopkgtest-pkg-ruby
+XS-Ruby-Versions: all
+
+Package: redmine-plugin-agile
+Architecture: all
+XB-Ruby-Versions: ${ruby:Versions}
+Depends: ruby | ruby-interpreter,
+         ${misc:Depends},
+         ${shlibs:Depends},
+         redmine,
+         ruby-redmine-crm (>= 0.0.34)
+Enhances: redmine
+Description: Agile / Kanban board plugin for Redmine
+ View and manipulate tasks as a Kanban board.

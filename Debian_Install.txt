@@ -1,0 +1,69 @@
+
+1. Whatever Debian version you are using, it is necessary to use
+   ruby-liquid 2.6.4 or older.  This can be satisfied by obtaining
+   ruby-liquid 2.6.1-2 from jessie:
+
+     wget http://http.us.debian.org/debian/pool/main/r/ruby-liquid/ruby-liquid_2.6.1-2_all.deb
+     sudo dpkg -i ruby-liquid_2.6.1-2_all.deb
+
+2. The redmine_crm Gem is required.  I tested v0.0.34.  It can be
+   downloaded and built automatically with gem2deb:
+
+     sudo apt update
+     sudo apt install gem2deb
+     gem2deb redmine_crm
+
+   gem2deb will give an error, press 'y' to ignore it:
+
+     Test "ruby2.3" failed. Continue building the package? (Y/N) y
+
+   If that version is no longer available, it is also possible to obtain
+   the version I tested from Github:
+
+     git clone https://github.com/dpocock/ruby-redmine-crm
+     cd ruby-redmine-crm
+     git checkout debian/sid
+     dpkg-buildpackage -us -uc -b
+     cd ..
+
+3. Install the redmine_crm package you just built:
+
+     sudo dpkg -i ruby-redmine-crm_0.0.34-1_all.deb
+
+4. Deploy the plugin code from this directory/repository:
+
+     cd ..
+     sudo rsync -r redmine_agile /usr/share/redmine/plugins
+
+5. Reconfigure the redmine package and it should make the plugin
+   available in all instances:
+
+     sudo dpkg-reconfigure redmine
+
+6. In the browser, log in to Redmine and go to
+
+     Administration -> Plugins -> Redmine Agile Plugin - Configure
+
+   Or browse to https://${YOUR_REDMINE_URL}/settings/plugin/redmine_agile
+
+   If an error page appears, check /var/log/redmine/default/production.log
+
+7. Select one of your projects in Redmine (or create one), go to
+
+     Settings -> Modules
+
+   Put a tick next to 'Agile' and click 'Save'
+
+8. Now you should see the 'Agile' tab, click it to see the agile board.
+
+9. On the main Project list page, click 'View All Issues'.  The list
+   of all issues in all projects appears.  On the right hand side-bar,
+   click the 'Agile Board' link.
+
+Resources
+---------
+
+https://wiki.debian.org/redmine
+https://wiki.debian.org/Teams/Ruby/Packaging
+https://rubygems.org/gems/redmine_crm
+

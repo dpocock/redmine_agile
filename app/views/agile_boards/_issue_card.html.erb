@@ -1,5 +1,10 @@
-<div class="issue-card hascontextmenu <%= agile_color_class(issue, :color_base => @query.respond_to?(:color_base) && @query.color_base) %> <%= class_for_closed_issue(issue) %>" data-id="<%= issue.id %>" style="<%= agile_user_color(issue.assigned_to, :color_base => @query.respond_to?(:color_base) && @query.color_base) if issue.assigned_to %>">
-    <% if issue.closed? && RedmineAgile.hide_closed_issues_data? %>
+<div class="issue-card hascontextmenu <%= agile_color_class(issue, :color_base => @query.respond_to?(:color_base) && @query.color_base) %> <%= class_for_closed_issue(issue, @version_board) %>"
+     data-id="<%= issue.id %>"
+     data-estimated-hours="<%= estimated_time_value(@query, issue).to_f %>"
+     data-story-points="<%= story_points_value(@query, issue).to_f %>"
+     style="<%= agile_user_color(issue.assigned_to, :color_base => @query.respond_to?(:color_base) && @query.color_base) if issue.assigned_to %>">
+
+  <% if issue.closed? && RedmineAgile.hide_closed_issues_data? && !@version_board %>
       <span class="fields">
          <div class="tooltip">
            <p class="issue-id <%= 'without-tracker' if @query.has_column_name?(:tracker).blank? %>">
@@ -11,10 +16,9 @@
       </span>
     <% else %>
       <span class="fields">
-          <% if User.current.allowed_to?(:edit_issues, @project, :global => true) && RedmineAgile.allow_inline_comments?  %>
+          <% if User.current.allowed_to?(:edit_issues, @project, :global => true) && !@version_board %>
             <div class="quick-edit-card">
-              <%# link_to image_tag("/images/edit.png"), edit_issue_path(issue), :class => "", :style => "margin-right: 3px;", :title => l(:button_edit) %>
-              <%= link_to image_tag("/images/comment.png", :alt => "Edit"), "#", :onclick => "showInlineComment(this, '#{j(agile_inline_comment_path(:id => issue))}'); return false;", :title => l(:label_comment_add), :class => 'add-comment' %>
+              <%= link_to image_tag("/images/comment.png", alt: 'Comment'), '#', onclick: "showInlineComment(this, '#{j(agile_inline_comment_path(:id => issue))}'); return false;", title: l(:label_comment_add), class: 'add-comment' if RedmineAgile.allow_inline_comments? %>
             </div>
           <% end %>
           <% if @query.has_column_name?(:project) %>
@@ -131,11 +135,14 @@
     </script>
   <% end %>
 
-  <% if @update %>
+  <% if @update && !@version_board %>
     <script type="text/javascript">
       $("table.issues-board thead").html("<%=escape_javascript render_board_headers(@query.board_statuses) %>");
     </script>
     <% if Redmine::VERSION.to_s > '2.4' %>
+      <script type="text/javascript">
+        agileBoard.initDroppable();
+      </script>
     <% end %>
   <% end %>
   <%= init_agile_tooltip_info %>

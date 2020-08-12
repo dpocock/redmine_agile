@@ -3,7 +3,7 @@
 # This file is a part of Redmin Agile (redmine_agile) plugin,
 # Agile board plugin for redmine
 #
-# Copyright (C) 2011-2017 RedmineUP
+# Copyright (C) 2011-2020 RedmineUP
 # http://www.redmineup.com/
 #
 # redmine_agile is free software: you can redistribute it and/or modify
@@ -19,9 +19,9 @@
 # You should have received a copy of the GNU General Public License
 # along with redmine_agile.  If not, see <http://www.gnu.org/licenses/>.
 
-require File.expand_path('../../test_helper', __FILE__)
+require File.expand_path(File.dirname(__FILE__) + '/../../test_helper')
 
-class AgileVersionsControllerTest < ActionController::TestCase
+class Redmine::ApiTest::AgileDataTest < ActiveRecord::VERSION::MAJOR >= 4 ? Redmine::ApiTest::Base : ActionController::IntegrationTest
   fixtures :projects,
            :users,
            :roles,
@@ -46,38 +46,32 @@ class AgileVersionsControllerTest < ActionController::TestCase
            :journal_details,
            :queries
 
+  RedmineAgile::TestCase.create_fixtures(Redmine::Plugin.find(:redmine_agile).directory + '/test/fixtures/', [:agile_data])
+
   def setup
-
-    @project_1 = Project.find(1)
-    @project_3 = Project.find(5)
-
-    EnabledModule.create(:project => @project_1, :name => 'agile')
-    EnabledModule.create(:project => @project_3, :name => 'agile')
-
-    @request.session[:user_id] = 1
+    Setting.rest_api_enabled = '1'
+    EnabledModule.create(:project => Project.find(1), :name => 'agile')
+    RedmineAgile::TestCase.prepare
   end
 
-  def test_get_index
-    get :index, :project_id => @project_1
-    assert_response :success
-    assert_template :index
+  test 'GET agile_data' do
+    if ActiveRecord::VERSION::MAJOR < 4
+      Redmine::ApiTest::Base.should_allow_api_authentication(:get, '/issues/1/agile_data.xml')
+    end
+    compatible_api_request :get, '/issues/1/agile_data.xml', {}, credentials('admin')
+
+    assert_equal 'application/xml', @response.content_type
+    assert_equal '200', @response.code
   end
 
-  def test_get_load
-    xhr :get, :load, :version_type => "backlog", :version_id => "3", :project_id => "ecookbook"
-    assert_response :success
-  end
+  test 'GET missied id' do
+    missied_id = Issue.order(:id).last.id
+    if ActiveRecord::VERSION::MAJOR < 4
+      Redmine::ApiTest::Base.should_allow_api_authentication(:get, "/issues/#{missied_id}/agile_data.xml")
+    end
+    compatible_api_request :get, "/issues/#{missied_id}/agile_data.xml", {}, credentials('admin')
 
-  def test_get_autocomplete_id
-    xhr :get, :autocomplete, :project_id => "ecookbook", :q =>"#3"
-    assert_response :success
-    assert_match "Error 281",  @response.body
+    assert_equal 'application/xml', @response.content_type
+    assert ['401', '403'].include?(@response.code)
   end
-
-  def test_get_autocomplete_text
-    xhr :get, :autocomplete, :project_id => "ecookbook", :q =>"error"
-    assert_response :success
-    assert_match "Error 281",  @response.body
-  end
-
 end

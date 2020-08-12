@@ -3,7 +3,7 @@
 # This file is a part of Redmin Agile (redmine_agile) plugin,
 # Agile board plugin for redmine
 #
-# Copyright (C) 2011-2017 RedmineUP
+# Copyright (C) 2011-2020 RedmineUP
 # http://www.redmineup.com/
 #
 # redmine_agile is free software: you can redistribute it and/or modify
@@ -22,6 +22,8 @@
 require File.expand_path('../../../test_helper', __FILE__)
 
 class AgileBoardsHelperTest < ActiveSupport::TestCase
+  fixtures :projects, :trackers, :issue_statuses, :issues, :issue_categories
+
   include ApplicationHelper
   include AgileBoardsHelper
   include CustomFieldsHelper
@@ -41,18 +43,17 @@ class AgileBoardsHelperTest < ActiveSupport::TestCase
     assert_equal "#{I18n.t('datetime.distance_in_words.x_hours', :count => 10)}", time_in_state(hour10)
     one_day = Time.now - 25.hours
     assert_equal "#{I18n.t('datetime.distance_in_words.x_days', :count => 1)}", time_in_state(one_day)
-    
+
     assert_equal "", time_in_state(nil)
     assert_equal "", time_in_state("string")
   end
 
   def test_show_checklist
-    issue1 = Issue.find(1)
-    checklist = issue1.checklists.create(:subject => 'TEST1', :position => 1)
+    issue = Issue.first
+    issue.checklists.create(subject: 'TEST1', position: 1)
     User.current = User.find(1)
-    
-    assert show_checklist?(issue1), "Not allowed show checklist for first issue"
-    assert !show_checklist?(Issue.find(3)), "Allowed show checklist for issue without checklist"
-  
+
+    assert show_checklist?(issue), 'Not allowed show checklist for first issue'
+    assert !show_checklist?(Issue.find(3)), 'Allowed show checklist for issue without checklist'
   end if RedmineAgile.use_checklist?
 end

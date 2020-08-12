@@ -3,7 +3,7 @@
 # This file is a part of Redmin Agile (redmine_agile) plugin,
 # Agile board plugin for redmine
 #
-# Copyright (C) 2011-2017 RedmineUP
+# Copyright (C) 2011-2020 RedmineUP
 # http://www.redmineup.com/
 #
 # redmine_agile is free software: you can redistribute it and/or modify
@@ -22,16 +22,11 @@
 module AgileChartsHelper
   def render_agile_charts_breadcrumb
     links = []
-    links << link_to(l(:label_project_all), {:project_id => nil, :issue_id => nil})
-    links << link_to(h(@project), {:project_id => @project, :issue_id => nil}) if @project
+    links << link_to(l(:label_project_all), project_id: nil, issue_id: nil)
+    links << link_to(h(@project), project_id: @project, issue_id: nil) if @project
     if @version
-      if @version.visible?
-        links << link_to(@version.name, version_path(@version))
-      else
-        links << @version.name
-      end
+      links << @version.visible? ? link_to(@version.name, version_path(@version)) : @version.name
     end
     breadcrumb links
   end
-
 end

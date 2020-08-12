@@ -3,7 +3,7 @@
 # This file is a part of Redmin Agile (redmine_agile) plugin,
 # Agile board plugin for redmine
 #
-# Copyright (C) 2011-2017 RedmineUP
+# Copyright (C) 2011-2020 RedmineUP
 # http://www.redmineup.com/
 #
 # redmine_agile is free software: you can redistribute it and/or modify
@@ -21,7 +21,7 @@
 
 require File.expand_path('../../test_helper', __FILE__)
 
-class AgileVersionsQueryTest < ActiveSupport::TestCase
+class AgileChartsQueryTest < ActiveSupport::TestCase
   fixtures :projects,
            :users,
            :roles,
@@ -47,28 +47,21 @@ class AgileVersionsQueryTest < ActiveSupport::TestCase
            :queries
 
   def setup
-    super
     RedmineAgile.create_issues
-    @query = AgileVersionsQuery.new
-        @query.project = Project.find(2)
-    @backlog_version = Version.find(7)
-    @current_version = Version.find(5)
-    User.current = User.find(1) #because issues selected according permissions
   end
 
-  def test_backlog_version
-    assert_equal @backlog_version, @query.backlog_version
-  end
+  def test_query_chart_period_statement_with_between
+    data = [
+      [[(Date.today - 5.days).to_s, (Date.today - 1.days).to_s], [(Date.today - 6.days).to_s, (Date.today - 1.days).to_s]],
+      [[(Date.today - 5.days).to_s, Date.today.to_s], [(Date.today - 6.days).to_s, Date.today.to_s]],
+      [[(Date.today - 5.days).to_s, (Date.today + 5.days).to_s], [(Date.today - 6.days).to_s, Date.today.to_s]],
+      [[Date.today.to_s, (Date.today + 5.days).to_s], [(Date.today - 1.days).to_s, Date.today.to_s]]
+    ]
 
-  def test_current_version
-    assert_equal @current_version, @query.current_version
-  end
-
-  def test_backlog_issues
-    assert_equal [100,101,102,103], @query.backlog_version_issues.map(&:id).sort
-  end
-  
-  def test_current_issues
-    assert_equal [104], @query.current_version_issues.map(&:id).sort
+    data.each do |values, result|
+      hash = { f: ['chart_period'], op: { 'chart_period' => '><' }, v: { 'chart_period' => values } }
+      query = AgileChartsQuery.new(:name => '_').build_from_params(hash)
+      assert_equal "issues.chart_period > '#{result[0]} 23:59:59.999999' AND issues.chart_period <= '#{result[1]} 23:59:59.999999'", query.send(:chart_period_statement)
+    end
   end
 end

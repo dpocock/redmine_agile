@@ -1,7 +1,7 @@
 # This file is a part of Redmin Agile (redmine_agile) plugin,
 # Agile board plugin for redmine
 #
-# Copyright (C) 2011-2017 RedmineUP
+# Copyright (C) 2011-2020 RedmineUP
 # http://www.redmineup.com/
 #
 # redmine_agile is free software: you can redistribute it and/or modify
@@ -21,13 +21,15 @@ module RedmineAgile
   class BurndownChart < AgileChart
     attr_accessor :burndown_data, :cumulative_burndown_data
 
-    def initialize(data_scope, options={})
+    def initialize(data_scope, options = {})
       @date_from = options[:date_from] && options[:date_from].to_date ||
                    [data_scope.minimum("#{Issue.table_name}.created_on"),
                     data_scope.minimum("#{Issue.table_name}.start_date")].compact.map(&:to_date).min
+
       @date_to = options[:date_to] && options[:date_to].to_date ||
                  [options[:due_date],
                   data_scope.maximum("#{Issue.table_name}.updated_on")].compact.map(&:to_date).max
+
       @due_date = options[:due_date].to_date if options[:due_date]
       @show_ideal_effort = options[:date_from] && options[:date_to]
 
@@ -56,8 +58,19 @@ module RedmineAgile
         :title    => @graph_title,
         :y_title  => @y_title,
         :labels   => @fields,
-        :datasets => datasets
+        :datasets => datasets,
+        :show_tooltips => [0, 2]
       }
+    end
+
+    def self.data(data_scope, options = {})
+      if options[:chart_unit] == Charts::UNIT_HOURS
+        WorkBurndownChart.new(data_scope, options.merge(estimated_unit: ESTIMATE_HOURS)).data
+      elsif options[:chart_unit] == Charts::UNIT_STORY_POINTS
+        WorkBurndownChart.new(data_scope, options.merge(estimated_unit: ESTIMATE_STORY_POINTS)).data
+      else
+        super
+      end
     end
 
     protected

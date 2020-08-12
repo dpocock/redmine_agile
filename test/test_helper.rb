@@ -3,7 +3,7 @@
 # This file is a part of Redmin Agile (redmine_agile) plugin,
 # Agile board plugin for redmine
 #
-# Copyright (C) 2011-2017 RedmineUP
+# Copyright (C) 2011-2020 RedmineUP
 # http://www.redmineup.com/
 #
 # redmine_agile is free software: you can redistribute it and/or modify
@@ -40,12 +40,11 @@ end
 
 def log_user(login, password)
   User.anonymous
-  get "/logout"
-  get "/login"
+  compatible_request :get, '/logout'
+  compatible_request :get, '/login'
   assert_nil session[:user_id]
   assert_response :success
-  assert_template "account/login"
-  post "/login", :username => login, :password => password
+  compatible_request :post, '/login', :username => login, :password => password
   assert_equal login, User.find(session[:user_id]).login
 end
 
@@ -63,6 +62,28 @@ def credentials(user, password=nil)
 end
 
 module RedmineAgile
+  module TestHelper
+    def compatible_request(type, action, parameters = {})
+      return send(type, action, parameters) if Redmine::VERSION.to_s < '3.5' && Redmine::VERSION::BRANCH == 'stable'
+      send(type, action, :params => parameters)
+    end
+
+    def compatible_xhr_request(type, action, parameters = {})
+      return xhr type, action, parameters if Redmine::VERSION.to_s < '3.5' && Redmine::VERSION::BRANCH == 'stable'
+      send(type, action, :params => parameters, :xhr => true)
+    end
+
+    def compatible_api_request(type, action, parameters = {}, headers = {})
+      return send(type, action, :params => parameters, :headers => headers) if Rails.version >= '5.1'
+      send(type, action, parameters, headers)
+    end
+
+    def agile_issues_in_list
+      ids = css_select('p.issue-id input').map { |tag| tag.to_s.to_s[/.*?value=\"(\d+)".*?/, 1] }.map(&:to_i)
+      Issue.where(:id => ids).sort_by { |issue| ids.index(issue.id) }
+    end
+  end
+
   module Demo
     # create_issue(10.days.ago, 4.days.ago, version)
     # 100.times{|i| create_issue(100.days.ago + i, 90.days.ago + i, version)}
@@ -323,3 +344,25 @@ module RedmineAgile
   end
 
 end
+
+class RedmineAgile::TestCase
+  def self.create_fixtures(fixtures_directory, table_names, class_names = {})
+    if ActiveRecord::VERSION::MAJOR >= 4
+      ActiveRecord::FixtureSet.create_fixtures(fixtures_directory, table_names, class_names = {})
+    else
+      ActiveRecord::Fixtures.create_fixtures(fixtures_directory, table_names, class_names = {})
+    end
+  end
+
+  def self.prepare
+    Role.find(1, 2, 3, 4).each do |r|
+      r.permissions << :manage_public_agile_queries
+      r.permissions << :add_agile_queries
+      r.permissions << :view_agile_queries
+      r.permissions << :agile_versions
+      r.save
+    end
+  end
+end
+
+include RedmineAgile::TestHelper

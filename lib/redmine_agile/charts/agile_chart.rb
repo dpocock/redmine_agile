@@ -1,7 +1,7 @@
 # This file is a part of Redmin Agile (redmine_agile) plugin,
 # Agile board plugin for redmine
 #
-# Copyright (C) 2011-2017 RedmineUP
+# Copyright (C) 2011-2020 RedmineUP
 # http://www.redmineup.com/
 #
 # redmine_agile is free software: you can redistribute it and/or modify
@@ -22,22 +22,32 @@ module RedmineAgile
     include Redmine::I18n
     include Redmine::Utils::DateCalculation
 
+    DAY_INTERVAL     = 'day'.freeze
+    WEEK_INTERVAL    = 'week'.freeze
+    MONTH_INTERVAL   = 'month'.freeze
+    QUARTER_INTERVAL = 'quarter'.freeze
+    YEAR_INTERVAL    = 'year'.freeze
+
+    TIME_INTERVALS = [DAY_INTERVAL, WEEK_INTERVAL, MONTH_INTERVAL, QUARTER_INTERVAL, YEAR_INTERVAL].freeze
+
     attr_reader :line_colors
 
-    def initialize(data_scope, options={})
+    def initialize(data_scope, options = {})
+      @options = options
       @data_scope = data_scope
       @data_from ||= options[:data_from]
       @data_to ||= options[:data_to]
-      @period_count, @scale_division = chart_periods
+      @interval_size = options[:interval_size] || DAY_INTERVAL
+      initialize_chart_periods
       @step_x_labels = @period_count > 18 ? @period_count / 12 + 1 : 1
       @fields = chart_fields_by_period
       @weekend_periods = weekend_periods
-      @estimated_unit = options[:estimated_unit] || 'hours'
+      @estimated_unit = options[:estimated_unit] || ESTIMATE_HOURS
       @line_colors = {}
     end
 
     def data
-      { :title => '', :y_title => '', :labels => [], :datasets => [] }
+      { title: '', y_title: '', labels: [], datasets: [] }
     end
 
     def self.data(data_scope, options = {})
@@ -47,17 +57,22 @@ module RedmineAgile
     protected
 
     def current_date_period
-      date_period = (@date_to <= Date.today ? @period_count : (@period_count - (@date_to - Date.today).to_i / @scale_division - 1) + 1).round
+      return @current_date_period if @current_date_period
+
+      date_period = (@date_to <= Date.today || @options[:date_to].present? ? @period_count : (@period_count - (@date_to - Date.today).to_i / @scale_division) + 1).round
       @current_date_period ||= date_period > 0 ? date_period : 0
     end
 
     def due_date_period
+      @date_from = @date_from.to_date
+      @date_to = @date_to.to_date
       due_date = (@due_date && @due_date > @date_from) ? @due_date : @date_from
-      @due_date_period ||= (@due_date ? @period_count - (@date_to - due_date).to_i / @scale_division - 1 : @period_count - 1) + 1
+      @due_date_period ||= (@due_date ? @period_count - (@date_to - due_date.to_date).to_i : @period_count - 1) + 1
+      @due_date_period = @due_date_period > 0 ? @due_date_period : 1
     end
 
     def date_short_period?
-      (@date_to - @date_from).to_i <= 31
+      (@date_to.to_date - @date_from.to_date).to_i <= 31
     end
 
     def date_effort(issues, effort_date)
@@ -127,25 +142,24 @@ module RedmineAgile
       color = options[:color] || [rand(255), rand(255), rand(255)].join(',')
       dataset_color = "rgba(#{color}, 1)"
       {
-        :type => (options[:type] || 'line'),
-        :data => dataset_data,
-        :label => label,
-        :fill => (options[:fill] || false),
-        :backgroundColor => "rgba(#{color}, 0.2)",
-        :borderColor => dataset_color,
-        :borderDash => (options[:dashed] ? [5, 5] : []),
-        :borderWidth => (options[:dashed] ? 1.5 : 2),
-        :pointRadius => (options[:nopoints] ? 0 : 3),
-        :pointBackgroundColor => dataset_color
+        type: (options[:type] || 'line'),
+        data: dataset_data,
+        label: label,
+        fill: (options[:fill] || false),
+        backgroundColor: "rgba(#{color}, 0.2)",
+        borderColor: dataset_color,
+        borderDash: (options[:dashed] ? [5, 5] : []),
+        borderWidth: (options[:dashed] ? 1.5 : 2),
+        pointRadius: (options[:nopoints] ? 0 : 3),
+        pointBackgroundColor: dataset_color,
+        tooltips: { enable: false }
       }
     end
 
-    def chart_periods
+    def initialize_chart_periods
       raise Exception "Dates can't be blank" if [@date_to, @date_from].any?(&:blank?)
-      period_count = (@date_to.to_date + 1 - @date_from.to_date).to_i
-      scale_division = period_count > 31 ? period_count / 31.0 : 1
-
-      [(period_count / scale_division).round, scale_division]
+      period_count
+      scale_division
     end
 
     def issues_count_by_period(issues_scope)
@@ -174,16 +188,17 @@ module RedmineAgile
     end
 
     def chart_fields_by_period
-      chart_dates_by_period.map do |d|
-        if @scale_division >= 365
-          d.year
-        elsif @scale_division >= 13
-          month_abbr_name(d.at_beginning_of_week.to_time.month) + ' ' + d.at_beginning_of_week.to_time.year.to_s
-        elsif @scale_division >= 7
-          d.at_beginning_of_week.to_time.day.to_s + ' ' + month_name(d.at_beginning_of_week.to_time.month)
-        else
-          d.to_time.day.to_s + ' ' + month_name(d.to_time.month)
-        end
+      chart_dates_by_period.map { |d| chart_field_by_date(d) }
+    end
+
+    def chart_field_by_date(date)
+      case @interval_size
+      when YEAR_INTERVAL
+        date.year
+      when QUARTER_INTERVAL, MONTH_INTERVAL
+        month_abbr_name(date.month) + ' ' + date.year.to_s
+      else
+        date.day.to_s + ' ' + month_name(date.month)
       end
     end
 
@@ -206,13 +221,9 @@ module RedmineAgile
     end
 
     def chart_dates_by_period
-      @chart_dates_by_period ||= @period_count.times.inject([]) do |accum, m|
+      @chart_dates_by_period ||= (@period_count - 1).times.inject([]) do |accum, m|
         period_date = ((@date_to.to_date - 1 - m * @scale_division) + 1)
-        accum << if m == 0 || m == @period_count - 1
-                   period_date.to_date
-                 elsif @scale_division >= 13
-                   period_date.at_beginning_of_week.to_date
-                 elsif @scale_division >= 7
+        accum << if @interval_size == WEEK_INTERVAL
                    period_date.at_beginning_of_week.to_date
                  else
                    period_date.to_date
@@ -247,6 +258,18 @@ module RedmineAgile
 
     def predict(x, slope, intercept)
       slope * x + intercept
+    end
+
+    def period_count
+      @period_count ||= ((@date_to.to_time - @date_from.to_time) / time_divider).round + 1
+    end
+
+    def scale_division
+      @scale_division ||= time_divider / 1.day
+    end
+
+    def time_divider
+      @interval_size == QUARTER_INTERVAL ? 3.months : 1.send(@interval_size)
     end
   end
 end

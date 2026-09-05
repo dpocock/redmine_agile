@@ -3,7 +3,7 @@
 # This file is a part of Redmin Agile (redmine_agile) plugin,
 # Agile board plugin for redmine
 #
-# Copyright (C) 2011-2020 RedmineUP
+# Copyright (C) 2011-2026 RedmineUP
 # http://www.redmineup.com/
 #
 # redmine_agile is free software: you can redistribute it and/or modify
@@ -21,7 +21,7 @@
 
 require File.expand_path(File.dirname(__FILE__) + '/../../test_helper')
 
-class Redmine::ApiTest::AgileDataTest < ActiveRecord::VERSION::MAJOR >= 4 ? Redmine::ApiTest::Base : ActionController::IntegrationTest
+class Redmine::ApiTest::AgileDataTest < Redmine::ApiTest::Base
   fixtures :projects,
            :users,
            :roles,
@@ -46,7 +46,8 @@ class Redmine::ApiTest::AgileDataTest < ActiveRecord::VERSION::MAJOR >= 4 ? Redm
            :journal_details,
            :queries
 
-  RedmineAgile::TestCase.create_fixtures(Redmine::Plugin.find(:redmine_agile).directory + '/test/fixtures/', [:agile_data])
+  load_plugin_fixtures :redmine_agile,
+                       :agile_data
 
   def setup
     Setting.rest_api_enabled = '1'
@@ -55,23 +56,15 @@ class Redmine::ApiTest::AgileDataTest < ActiveRecord::VERSION::MAJOR >= 4 ? Redm
   end
 
   test 'GET agile_data' do
-    if ActiveRecord::VERSION::MAJOR < 4
-      Redmine::ApiTest::Base.should_allow_api_authentication(:get, '/issues/1/agile_data.xml')
-    end
     compatible_api_request :get, '/issues/1/agile_data.xml', {}, credentials('admin')
-
-    assert_equal 'application/xml', @response.content_type
+    assert_match 'application/xml', @response.content_type
     assert_equal '200', @response.code
   end
 
   test 'GET missied id' do
     missied_id = Issue.order(:id).last.id
-    if ActiveRecord::VERSION::MAJOR < 4
-      Redmine::ApiTest::Base.should_allow_api_authentication(:get, "/issues/#{missied_id}/agile_data.xml")
-    end
     compatible_api_request :get, "/issues/#{missied_id}/agile_data.xml", {}, credentials('admin')
-
-    assert_equal 'application/xml', @response.content_type
+    assert_match 'application/xml', @response.content_type
     assert ['401', '403'].include?(@response.code)
   end
 end

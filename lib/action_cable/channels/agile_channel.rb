@@ -1,7 +1,7 @@
 # This file is a part of Redmin Agile (redmine_agile) plugin,
 # Agile board plugin for redmine
 #
-# Copyright (C) 2011-2020 RedmineUP
+# Copyright (C) 2011-2026 RedmineUP
 # http://www.redmineup.com/
 #
 # redmine_agile is free software: you can redistribute it and/or modify
@@ -17,17 +17,26 @@
 # You should have received a copy of the GNU General Public License
 # along with redmine_agile.  If not, see <http://www.gnu.org/licenses/>.
 
-module RedmineAgile
-  module Patches
-    module IssuesControllerPatch
-      def self.included(base) # :nodoc:
-        base.class_eval do
-        end
+module ActionCable
+  module Channels
+    class AgileChannel < ActionCable::Channel::Base
+      BASE_CHANNEL_NAME = "action_cable:channels:agile"
+
+      def subscribed
+        return reject unless RedmineAgile.cable_enabled?
+        return subscribe_to_board_stream if params[:chat_id].match(/board/)
+
+        reject
+      end
+
+      private
+
+      def subscribe_to_board_stream
+        project = Project.find_by(id: params[:chat_id].split('board-').last)
+        return reject if !current_user || !current_user.allowed_to?(:view_issues, project, global: true)
+
+        stream_from "#{BASE_CHANNEL_NAME}:#{params[:chat_id]}"
       end
     end
   end
-end
-
-unless IssuesController.included_modules.include?(RedmineAgile::Patches::IssuesControllerPatch)
-  IssuesController.send(:include, RedmineAgile::Patches::IssuesControllerPatch)
 end

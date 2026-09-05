@@ -3,7 +3,7 @@
 # This file is a part of Redmin Agile (redmine_agile) plugin,
 # Agile board plugin for redmine
 #
-# Copyright (C) 2011-2020 RedmineUP
+# Copyright (C) 2011-2026 RedmineUP
 # http://www.redmineup.com/
 #
 # redmine_agile is free software: you can redistribute it and/or modify
@@ -49,11 +49,12 @@ class AgileChartsControllerTest < ActionController::TestCase
   def setup
     @request.session[:user_id] = 1
     @project = Project.find(1)
+    @issue = @project.issues.first
 
     EnabledModule.create(project: @project, name: 'agile')
 
-    @charts = RedmineAgile::Charts::AGILE_CHARTS.keys
-    @charts_with_units = RedmineAgile::Charts::CHARTS_WITH_UNITS
+    @charts = RedmineAgile::Charts::Helper::AGILE_CHARTS.keys
+    @charts_with_units = RedmineAgile::Charts::Helper::CHARTS_WITH_UNITS
   end
 
   def test_get_show
@@ -72,7 +73,7 @@ class AgileChartsControllerTest < ActionController::TestCase
 
   def test_charts_with_chart_unit
     @charts_with_units.each do |chart|
-      RedmineAgile::Charts::CHART_UNITS.each do |chart_unit, label|
+      RedmineAgile::Charts::Helper::CHART_UNITS.each do |chart_unit, label|
         check_chart chart: chart, project_id: @project.identifier, chart_unit: chart_unit
       end
     end
@@ -80,7 +81,7 @@ class AgileChartsControllerTest < ActionController::TestCase
 
   def test_charts_by_different_time_intervals
     @charts.each do |chart|
-      RedmineAgile::AgileChart::TIME_INTERVALS.each do |interval|
+      RedmineAgile::Charts::AgileChart::TIME_INTERVALS.each do |interval|
         check_chart chart: chart, project_id: @project.identifier, interval_size: interval
       end
     end
@@ -88,7 +89,7 @@ class AgileChartsControllerTest < ActionController::TestCase
 
   def test_charts_by_different_periods_and_time_intervals
     @charts.each do |chart|
-      RedmineAgile::AgileChart::TIME_INTERVALS.each do |interval|
+      RedmineAgile::Charts::AgileChart::TIME_INTERVALS.each do |interval|
         params = {
           chart: chart,
           project_id: @project.identifier,
@@ -134,23 +135,39 @@ class AgileChartsControllerTest < ActionController::TestCase
 
   def test_charts_with_version_and_chart_unit
     @charts_with_units.each do |chart|
-      RedmineAgile::Charts::CHART_UNITS.each do |chart_unit, label|
+      RedmineAgile::Charts::Helper::CHART_UNITS.each do |chart_unit, label|
         should_get_render_chart chart: chart, version_id: 2, chart_unit: chart_unit
       end
     end
   end
 
   def test_issues_burndown_chart_when_first_issue_later_then_due_date
-    new_version = Version.create!(name: 'Some new vesion', effective_date: (Date.today - 10.days), project_id: @project.id)
-    new_version.fixed_issues << Issue.create!(
+    new_version = Version.create!(name: 'Some new vesion', effective_date: Date.today, project_id: @project.id)
+    issue = Issue.create!(
       project_id: @project.id,
       tracker_id: 1,
       subject: 'test_issues_burndown_chart_when_first_issue_later_then_due_date',
       author_id: 2,
-      start_date: Date.today
+      start_date: Date.today + 20
     )
+    new_version.fixed_issues << issue.reload
+    Issue.where(id: issue.id).update_all(created_on: Date.today + 20, updated_on: Date.today - 5)
 
-    should_get_render_chart chart: RedmineAgile::Charts::BURNDOWN_CHART, project_id: @project.identifier, version_id: new_version.id
+    compatible_xhr_request :get, :render_chart, chart: RedmineAgile::Charts::Helper::BURNDOWN_CHART,
+                                                project_id: @project.identifier, version_id: new_version.id
+    assert_response :not_found
+  end
+
+  def test_get_show_chart_with_open_target_version
+    current_version = @issue.fixed_version
+    @issue.update(fixed_version: Version.open.first)
+
+    should_get_render_chart project_id: @project.identifier, chart: 'burndown_chart',
+                                                             f: ['version_status'],
+                                                             op: { 'version_status' => '=' },
+                                                             v: { 'version_status' => ['open'] }
+    ensure
+    @issue.update(fixed_version: current_version)
   end
 
   private
@@ -164,7 +181,7 @@ class AgileChartsControllerTest < ActionController::TestCase
   def should_get_render_chart(parameters = {})
     compatible_xhr_request :get, :render_chart, parameters
     assert_response :success
-    assert_equal 'application/json', response.content_type
+    assert_match 'application/json', response.content_type
 
     json = ActiveSupport::JSON.decode(response.body)
     assert_kind_of Hash, json

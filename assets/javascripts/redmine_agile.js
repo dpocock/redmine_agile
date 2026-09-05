@@ -60,9 +60,11 @@
         connectWith: ".column-issues",
         start: function(event, ui) {
           var $item = $(ui.item);
+          var boardType = $item.parent().data('version-id') !== undefined ? 'version' : 'sprint';
+          $item.attr('oldPosition', $item.index());
           $item.attr('oldColumnId', $item.parent().data('version-id'));
           $item.attr('oldSprintId', $item.parent().data('sprint-id'));
-          $item.attr('oldPosition', $item.index());
+          $item.attr('boardType', boardType);
         },
         stop: function(event, ui) {
           var $item = $(ui.item);
@@ -71,8 +73,8 @@
           var version_id = $column.attr('data-version-id');
           var sprint_id = $column.attr('data-sprint-id');
           var positions = {};
-          var oldId = $item.attr('oldColumnId');
-          var $oldColumn = $('.ui-sortable[data-version-id="' + oldId + '"]');
+          var oldId = $item.attr('boardType') !== 'sprint' ? $item.attr('oldColumnId') : $item.attr('oldSprintId');
+          var $oldColumn = $('.ui-sortable[data-' + $item.attr('boardType') + '-id="' + oldId + '"]');
 
           if(!self.hasChange($item)){
             self.backSortable($column);
@@ -81,7 +83,7 @@
 
           $column.find('.issue-card').each(function(i, e) {
             var $e = $(e);
-            positions[$e.data('id')] = { position: $e.index() };
+            positions[$e.data('id')] = { position: i };
           });
 
           var issueParams = {};
@@ -94,7 +96,8 @@
             data: {
               issue: issueParams,
               positions: positions,
-              id: issue_id
+              id: issue_id,
+              actor: $(".agile-board").data("actor")
             },
             success: function(data, status, xhr) {
               self.successSortable($oldColumn, $column);
@@ -155,15 +158,29 @@
 
       $issuesCols.sortable({
         items: '.issue-card',
-        connectWith: ".issue-status-col",
+        connectWith: [".issue-status-col", ".closed_status"],
+        scroll: false,
+        tolerance: "pointer",
+        placeholder: "ui-state-highlight",
         start: function(event, ui) {
           var $item = $(ui.item);
+          var $board = $('.agile-board')
           $item.attr('oldColumnId', $item.parent().data('id'));
           $item.attr('oldSwimLaneId', $item.parents('tr.swimlane').data('id'));
           $item.attr('oldSwimLaneField', $item.parents('tr.swimlane').attr('data-field'));
           $item.attr('oldPosition', $item.index());
+          $("div.closed_container").css('left', $board.outerWidth() - 80)
+          $("div.closed_container").show();
+          $("#content").css("overflow-x", "visible");
         },
         stop: function(event, ui) {
+          if (self.overClosedContainer) {
+            $(ui.item).hide();
+            $(this).sortable('cancel');
+            $("div.closed_container").hide();
+            $("#content").css("overflow-x", "");
+            return;
+          }
           var that = this;
           var $item = $(ui.item);
           var sender = ui.sender;
@@ -180,6 +197,8 @@
           var oldSwimLaneField = $item.attr('oldSwimLaneField');
           var $oldColumn = $('.ui-sortable[data-id="' + oldStatusId + '"]');
           var $sprintField = $('#sprint_id');
+          $("div.closed_container").hide();
+          $("#content").css("overflow-x", "");
 
           if(!self.hasChange($item)){
             self.backSortable($column);
@@ -196,7 +215,7 @@
 
           $column.find('.issue-card').each(function(i, e) {
             var $e = $(e);
-            positions[$e.data('id')] = { position: $e.index() };
+            positions[$e.data('id')] = { position: i };
           });
 
           var params = {
@@ -204,7 +223,8 @@
                 status_id: newStatusId
               },
               positions: positions,
-              id: issue_id
+              id: issue_id,
+              actor: $(".agile-board").data("actor")
             }
           params['issue'][swimLaneField] = swimLaneId;
 
@@ -227,9 +247,8 @@
               self.successSortable(oldStatusId, newStatusId, oldSwimLaneId, swimLaneId);
               $($item).replaceWith(data);
               estimatedHours = $($item).find("span.hours");
-              if(estimatedHours.size() > 0){
+              if(estimatedHours.length > 0){
                 hours = $(estimatedHours).html().replace(/(\(|\)|h)?/g, '');
-                // self.recalculateEstimateHours(oldStatusId, newStatusId, hours);
               }
             },
             error: function(xhr, status, error) {
@@ -303,6 +322,75 @@
           $self.find("p.info").html(ui.draggable.clone());
         }
       });
+
+      $closedContainer = $("div.closed_container");
+      $closedContainer.find("div.closed_status").droppable({
+        activeClass: "droppable-active",
+        hoverClass: "droppable-hover",
+        accept: ".issue-card",
+        tolerance: "pointer",
+        drop: function (event, ui) {
+          var that = this;
+          var $card = $(ui.draggable);
+          var issue_id = $card.data("id");
+          var $swimlane = $card.parents("tr.swimlane");
+          var swimLaneField = $swimlane.attr("data-field");
+          var swimLaneId = $swimlane.data("id");
+          var oldStatusId = $card.attr("oldColumnId");
+          var oldSwimLaneId = $card.attr("oldSwimLaneId");
+          var $oldColumn = $('.ui-sortable[data-id="' + oldStatusId + '"]');
+
+          var newStatusId = $(this).data("id");
+
+          var params = {
+            issue: {
+              status_id: newStatusId,
+            },
+            id: issue_id,
+            actor: $(".agile-board").data("actor"),
+          };
+          params["issue"][swimLaneField] = swimLaneId;
+
+          $.ajax({
+            url: self.routes.update_agile_board_path,
+            type: "PUT",
+            data: params,
+            success: function (data, status, xhr) {
+              self.successSortable(
+                oldStatusId,
+                newStatusId,
+                oldSwimLaneId,
+                swimLaneId
+              );
+              estimatedHours = $($card).find("span.hours");
+              if (estimatedHours.length > 0) {
+                hours = $(estimatedHours)
+                  .html()
+                  .replace(/(\(|\)|h)?/g, "");
+              }
+            },
+            error: function (xhr, status, error) {
+              console.log("Dropping error: ", error);
+              self.errorSortable($oldColumn, xhr.responseText);
+              $closedContainer
+                .find("div.closed_status")
+                .animate({ padding: "0px" }, "fast");
+            },
+            complete: function () {
+              ui.draggable.remove();
+              $(".lock").hide();
+            },
+          });
+        },
+        over: function () {
+          self.overClosedContainer = true;
+          $(this).animate({ padding: "5px" }, "fast");
+        },
+        out: function () {
+          self.overClosedContainer = false;
+          $(this).animate({ padding: "0px" }, "fast");
+        },
+      });
     };
 
     this.getToolTipInfo = function(node, url){
@@ -326,36 +414,43 @@
       });
     }
 
-    this.createIssue = function(url){
-      $('.add-issue').click(function(){
-        $(this).children('.new-card__input').focus();
-      });
-      $('.new-card__input').keyup(function(evt){
-        var node = this;
-        evt = evt || window.event;
-        subject = $.trim($(node).val());
+    this.createIssue = function (url) {
+      $(".add-issue").click(function () {
+        $(this).children(".new-card__input").focus()
+      })
+      $('.agile-board').parent('form').on('submit', function(evt) {
+        evt.preventDefault();
+      })
+      $(".new-card__input").keyup(function (evt) {
+        var node = this
+        var $sprintField = $("#sprint_id")
+        evt = evt || window.event
+        subject = $.trim($(node).val())
+        sprint_id = $sprintField ? $sprintField.val() : ""
         if (evt.keyCode == 13 && subject.length != 0) {
           $.ajax({
             url: url,
             type: "POST",
             data: {
               subject: subject,
-              status_id: $(node).parents('td').data('id')
+              status_id: $(node).parents("td").data("id"),
+              sprint_id: sprint_id,
+              actor: $(".agile-board").data("actor")
             },
             dataType: "html",
-            success: function(data, status, xhr){
-              $(node).parent().before(data);
-              $(node).val('');
+            success: function (data, status, xhr) {
+              $(node).parent().before(data)
+              $(node).val("")
             },
-            error:function(xhr, status, error) {
-              var alertMessage = parseErrorResponse(xhr.responseText);
+            error: function (xhr, status, error) {
+              var alertMessage = parseErrorResponse(xhr.responseText)
               if (alertMessage) {
-                setErrorMessage(alertMessage);
+                setErrorMessage(alertMessage)
               }
-            }
-          });
+            },
+          })
         }
-      });
+      })
     }
 
     this.routes = routes;
@@ -608,13 +703,42 @@ function recalculateHours() {
 
     if (values.length > 0) {
       $(elem).find('.version-estimate').text('(' + values.join('/') + ')');
+    } else {
+      $(elem).find('.version-estimate').text('');
     }
   });
 }
 
-function recalculateSprintHours() {
+function recalculateSprintHours(url, options) {
+  var $sprint_ids = [];
+  var $sprintValueExist = $('span.sprint-estimate').text().trim()
+
+  $('div.column-issues').each(function() {
+    if($(this).attr('data-sprint-id') !== '') {
+      $sprint_ids.push($(this).attr('data-sprint-id'));
+    }
+  });
+  if($sprint_ids.length > 0 && $sprintValueExist) {
+    $.ajax({
+      url: url,
+      type: "get",
+      data: {sprint_ids: $sprint_ids},
+      success: function (data, status, xhr) {
+        refreshStoryPointsValues(data);
+      },
+      error: function (xhr, status, error) {
+            var alertMessage = parseErrorResponse(xhr.responseText);
+            if (alertMessage) {
+              setErrorMessage(alertMessage);
+            }
+      }
+    });
+  }
+}
+
+function recalculateEstimatedHours() {
   var unit = $(".planning-board").data('estimated-unit');
-  var dataAttr = unit == 'sp' ? 'story-points' : 'estimated-hours';
+  var dataAttr = 'estimated-hours';
 
   $('.sprint-column').each(function(i, elem){
     var versionEstimationSum = 0;
@@ -622,7 +746,21 @@ function recalculateSprintHours() {
       hours = parseFloat($(issue).data(dataAttr));
       versionEstimationSum += hours;
     });
-    $(elem).find('.sprint-estimate').text('(' + versionEstimationSum.toFixed(2) + unit + ')');
+    if (versionEstimationSum > 0) {
+      $(elem).find('.sprint-estimate').text('(' + versionEstimationSum.toFixed(2) + unit + ')');
+    }
+  });
+}
+
+function refreshStoryPointsValues(values) {
+  $('div.column-issues').each(function() {
+    var sprint = $(this).attr('data-sprint-id');
+
+    if(values[sprint]) {
+      $(this).parent().find('span.sprint-estimate').text("(" + values[sprint] + "sp)");
+    } else {
+      $(this).parent().find('span.sprint-estimate').text("");
+    }
   });
 }
 

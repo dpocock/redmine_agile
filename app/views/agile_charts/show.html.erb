@@ -9,13 +9,19 @@
     <%= hidden_field_tag 'set_filter', '1' %>
     <div id="query_form_content">
       <fieldset id="filters" class="collapsible">
-        <legend class="icon icon-expended" onclick="toggleFieldset(this);"><%= l(:label_filter_plural) %></legend>
+        <legend onclick="toggleFieldset(this);" class="icon icon-<%= @query.new_record? ? "expanded" : "collapsed" %>">
+          <%= sprite_icon(@query.new_record? ? 'angle-down' : 'angle-right') %>
+          <%= l(:label_filter_plural) %>
+          </legend>
         <div>
           <%= render :partial => 'queries/filters', :locals => {:query => @query} %>
         </div>
       </fieldset>
       <fieldset class="collapsible">
-        <legend class="icon icon-expended" onclick="toggleFieldset(this);"><%= l(:label_options) %></legend>
+        <legend onclick="toggleFieldset(this);" class="icon icon-collapsed">
+          <%= sprite_icon('angle-right') %>
+          <%= l(:label_options) %>
+        </legend>
         <div>
           <table>
             <tr>
@@ -29,7 +35,7 @@
             <tr id="interval-size">
               <td><%= l(:label_agile_interval_size) %></td>
               <td>
-                <%= select_tag 'interval_size', options_for_select(RedmineAgile::AgileChart::TIME_INTERVALS.map { |i| [l(:"label_agile_#{i}"), i] }, @query.interval_size) %>
+                <%= select_tag 'interval_size', options_for_select(RedmineAgile::Charts::AgileChart::TIME_INTERVALS.map { |i| [l(:"label_agile_#{i}"), i] }, @query.interval_size) %>
               </td>
             </tr>
           </table>
@@ -37,8 +43,8 @@
       </fieldset>
     </div>
     <p class="buttons">
-      <%= link_to_function l(:button_apply), '$("#query_form").submit()', :class => 'icon icon-checked' %>
-      <%= link_to l(:button_clear), { :set_filter => 1, :project_id => @project }, :class => 'icon icon-reload'  %>
+      <%= link_to_function sprite_icon('checked', l(:button_apply)), '$("#query_form").submit()', :class => 'icon icon-checked' %>
+      <%= link_to sprite_icon('reload', l(:button_clear)), { :set_filter => 1, :project_id => @project }, :class => 'icon icon-reload'  %>
     </p>
   </div>
 <% end %>
@@ -58,7 +64,7 @@
 <% end %>
 
 <%= javascript_tag do %>
-  var chartsWithUnits = <%= raw RedmineAgile::Charts::CHARTS_WITH_UNITS.to_json %>
+  var chartsWithUnits = <%= raw RedmineAgile::Charts::Helper::CHARTS_WITH_UNITS.to_json %>
   $(document).ready(function() {
     toggleChartUnit($('#chart').val(), 'chart-unit-row');
     /* Hide chart_period checkbox so that it couldn't be unchecked */

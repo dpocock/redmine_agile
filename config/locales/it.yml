@@ -49,8 +49,8 @@ it:
 
   #1.1.1
   label_agile_charts_average_velocity: Media velocità
-  label_agile_charts_avarate_number_of_issues: Media del numero di segnalazioni
-  label_agile_charts_avarate_number_of_hours: Media del numero di ore
+  label_agile_charts_average_number_of_issues: Media del numero di segnalazioni
+  label_agile_charts_average_number_of_hours: Media del numero di ore
 
   #1.2.0
   label_agile_color: Colore
@@ -199,7 +199,7 @@ it:
   label_agile_board_totals_remaining: Residuo
 
   label_agile_sprint_list_active: Sprint attivi
-  label_agile_sprint_list_open: Sprint futuri
+  label_agile_sprint_list_future: Sprint futuri
 
   label_agile_mixed_trackers: Trackers misti
   label_agile_moving_average: Media scostamenti

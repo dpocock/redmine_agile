@@ -1,7 +1,7 @@
 # This file is a part of Redmin Agile (redmine_agile) plugin,
 # Agile board plugin for redmine
 #
-# Copyright (C) 2011-2020 RedmineUP
+# Copyright (C) 2011-2026 RedmineUP
 # http://www.redmineup.com/
 #
 # redmine_agile is free software: you can redistribute it and/or modify
@@ -18,8 +18,6 @@
 # along with redmine_agile.  If not, see <http://www.gnu.org/licenses/>.
 
 class AgileChartsQuery < AgileQuery
-  unloadable
-
   validate :validate_query_dates
 
   attr_writer :date_from, :date_to
@@ -39,7 +37,9 @@ class AgileChartsQuery < AgileQuery
   end
 
   def sprint_values
-    AgileSprint.for_project(project).available.map { |s| [s.to_s, s.id.to_s] }
+    return [] unless project
+
+    project.shared_agile_sprints.available.map { |s| [s.to_s, s.id.to_s] }
   end
 
   def default_columns_names
@@ -51,7 +51,7 @@ class AgileChartsQuery < AgileQuery
   end
 
   def chart
-    @chart ||= RedmineAgile::Charts.valid_chart_name_by(options[:chart])
+    @chart ||= RedmineAgile::Charts::Helper.valid_chart_name_by(options[:chart])
   end
 
   def chart=(arg)
@@ -67,10 +67,10 @@ class AgileChartsQuery < AgileQuery
   end
 
   def interval_size
-    if RedmineAgile::AgileChart::TIME_INTERVALS.include?(options[:interval_size])
+    if RedmineAgile::Charts::AgileChart::TIME_INTERVALS.include?(options[:interval_size])
       options[:interval_size]
     else
-      RedmineAgile::AgileChart::DAY_INTERVAL
+      RedmineAgile::Charts::AgileChart::DAY_INTERVAL
     end
   end
 
@@ -80,8 +80,8 @@ class AgileChartsQuery < AgileQuery
 
   def build_from_params(params)
     if params[:fields] || params[:f]
-      self.filters = {}.merge(chart_period_filter(params))
       add_filters(params[:fields] || params[:f], params[:operators] || params[:op], params[:values] || params[:v])
+      self.filters = filters.merge(chart_period_filter(params))
     else
       available_filters.keys.each do |field|
         add_short_filter(field, params[field]) if params[field]
@@ -92,8 +92,8 @@ class AgileChartsQuery < AgileQuery
     self.date_from = params[:date_from] || (params[:query] && params[:query][:date_from])
     self.date_to = params[:date_to] || (params[:query] && params[:query][:date_to])
     self.chart = params[:chart] || (params[:query] && params[:query][:chart]) || params[:default_chart] || RedmineAgile.default_chart
-    self.interval_size = params[:interval_size] || (params[:query] && params[:query][:interval_size]) || RedmineAgile::AgileChart::DAY_INTERVAL
-    self.chart_unit = params[:chart_unit] || (params[:query] && params[:query][:chart_unit]) || RedmineAgile::Charts::UNIT_ISSUES
+    self.interval_size = params[:interval_size] || (params[:query] && params[:query][:interval_size]) || RedmineAgile::Charts::AgileChart::DAY_INTERVAL
+    self.chart_unit = params[:chart_unit] || (params[:query] && params[:query][:chart_unit]) || RedmineAgile::Charts::Helper::UNIT_ISSUES
 
     self
   end
@@ -105,8 +105,8 @@ class AgileChartsQuery < AgileQuery
   private
 
   def chart_period_filter(params)
-    return {} if (params[:fields] || params[:f]).include?('chart_period')
-    { 'chart_period' => { operator: 'm', values: [''] } }
+    period_filter = (params[:fields] || params[:f]).include?('chart_period')
+    period_filter ? {} : { 'chart_period' => { operator: 'm', values: [''] } }
   end
 
   def validate_query_dates
@@ -143,23 +143,23 @@ class AgileChartsQuery < AgileQuery
       days_ago = (day_of_week >= first_day_of_week ? day_of_week - first_day_of_week : day_of_week + 7 - first_day_of_week)
       sql_for_field(field, '><t-', [days_ago], Issue.table_name, field)
     when 'm'
-      days_ago = date - date.beginning_of_month
-      sql_for_field(field, '><t-', [days_ago], Issue.table_name, field)
+      date_to = RedmineAgile.chart_future_data? ? date.end_of_month.to_s : date.to_s
+      sql_for_field(field, '><', [date.beginning_of_month.to_s, date_to], Issue.table_name, field)
     when 'y'
       days_ago = date - date.beginning_of_year
       sql_for_field(field, '><t-', [days_ago], Issue.table_name, field)
     when '><'
-      sql_for_field(field, '><', present_values(values), Issue.table_name, field)
+      sql_for_field(field, '><', adjusted_values(values), Issue.table_name, field)
     else
       sql_for_field(field, operator, values, Issue.table_name, field)
     end
   end
 
-  def present_values(values)
+  def adjusted_values(values)
     return values unless values.is_a?(Array)
 
-    from = Date.parse(values[0])
-    to = Date.parse(values[1])
-    [(from < Date.today ? from : Date.today).to_s, (Date.today < to ? Date.today : to).to_s]
+    from = values[0].present? ? Date.parse(values[0]) : Date.today
+    to = values[1].present? ? Date.parse(values[1]) : Date.today
+    [from.to_s, (to < from ? from : to).to_s]
   end
 end

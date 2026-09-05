@@ -49,13 +49,13 @@ es:
 
   #1.1.1
   label_agile_charts_average_velocity: Velocidad promedio
-  label_agile_charts_avarate_number_of_issues: Número de peticiones promedio
-  label_agile_charts_avarate_number_of_hours: Número de horas promedio
+  label_agile_charts_average_number_of_issues: Número de peticiones promedio
+  label_agile_charts_average_number_of_hours: Número de horas promedio
 
   #1.2.0
   label_agile_color: Color
   permission_manage_agile_verions: Administrar planificación de versiones
-  label_agile_version_planning: planificación de versiones
+  label_agile_version_planning: Planificación de versiones
   error_agile_version_transition: No se puede cambiar la versión de la petición
   label_agile_tracker_colors: Colores de tipos
   label_agile_issue_priority_colors: Colores de prioridades de la petición
@@ -199,7 +199,7 @@ es:
   label_agile_board_totals_remaining: Restante
 
   label_agile_sprint_list_active: Sprints activos
-  label_agile_sprint_list_open: Sprints futuros
+  label_agile_sprint_list_future: Sprints futuros
 
   label_agile_mixed_trackers: Tipos mixtos
   label_agile_moving_average: Moving Average

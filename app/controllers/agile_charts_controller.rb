@@ -1,7 +1,7 @@
 # This file is a part of Redmin Agile (redmine_agile) plugin,
 # Agile board plugin for redmine
 #
-# Copyright (C) 2011-2020 RedmineUP
+# Copyright (C) 2011-2026 RedmineUP
 # http://www.redmineup.com/
 #
 # redmine_agile is free software: you can redistribute it and/or modify
@@ -18,8 +18,6 @@
 # along with redmine_agile.  If not, see <http://www.gnu.org/licenses/>.
 
 class AgileChartsController < ApplicationController
-  unloadable
-
   menu_item :agile
 
   before_action :find_optional_project, :only => [:show, :render_chart]
@@ -45,7 +43,7 @@ class AgileChartsController < ApplicationController
   include SortHelper
   include IssuesHelper
   helper :timelog
-  include RedmineAgile::AgileHelper
+  include RedmineAgile::Helpers::AgileHelper
 
   def show
     retrieve_charts_query
@@ -69,6 +67,7 @@ class AgileChartsController < ApplicationController
     else
       retrieve_charts_query
       @issues = Issue.visible
+      @issues = @issues.joins(:fixed_version) if @query.filters.keys.include?('version_status')
       @issues = @issues.where(@query.statement)
       options = { date_from: @query.date_from,
                   date_to: @query.date_to,
@@ -84,8 +83,12 @@ class AgileChartsController < ApplicationController
   private
 
   def render_data(options = {})
-    agile_chart = RedmineAgile::Charts::AGILE_CHARTS[@chart]
-    data = agile_chart[:class].data(@issues, options) if agile_chart
+    agile_chart = RedmineAgile::Charts::Helper::AGILE_CHARTS[@chart]
+    begin
+      data = agile_chart[:class].data(@issues, options) if agile_chart
+    rescue RedmineAgile::Charts::AgileChart::InvalidPeriodError
+      return render_404
+    end
 
     if data
       data[:chart] = @chart

@@ -1,7 +1,7 @@
 # This file is a part of Redmin Agile (redmine_agile) plugin,
 # Agile board plugin for redmine
 #
-# Copyright (C) 2011-2020 RedmineUP
+# Copyright (C) 2011-2026 RedmineUP
 # http://www.redmineup.com/
 #
 # redmine_agile is free software: you can redistribute it and/or modify
@@ -17,8 +17,7 @@
 # You should have received a copy of the GNU General Public License
 # along with redmine_agile.  If not, see <http://www.gnu.org/licenses/>.
 
-class AgileData < ActiveRecord::Base
-  unloadable
+class AgileData < ApplicationRecord
   belongs_to :issue
 
   validates :story_points, :numericality => {:only_integer => true, :greater_than_or_equal_to => 0, :allow_nil => true, :message => :invalid}

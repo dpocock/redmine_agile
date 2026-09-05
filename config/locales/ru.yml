@@ -39,7 +39,7 @@ ru:
   label_agile_date_from: С
   label_agile_date_to: По
   label_agile_chart_dates: Интервалы диаграммы
-  label_agile_weighed_ideal_work_remaining: Взвещенно
+  label_agile_weighed_ideal_work_remaining: Взвешенно
   label_agile_status_colors: Цвета статусов
   label_agile_charts_burnup: Выполнение задач
   label_agile_charts_number_of_days: Кол-во дней
@@ -50,8 +50,8 @@ ru:
 
   #1.1.1
   label_agile_charts_average_velocity: Средняя скорость закрытия задач
-  label_agile_charts_avarate_number_of_issues: Среднее кол-во задач
-  label_agile_charts_avarate_number_of_hours: Среднее кол-во часов
+  label_agile_charts_average_number_of_issues: Среднее кол-во задач
+  label_agile_charts_average_number_of_hours: Среднее кол-во часов
 
   #1.2.0
   label_agile_color: Цвет
@@ -104,7 +104,7 @@ ru:
   label_agile_additional_agile_charts: Доп. диаграммы
   label_agile_coloured_issue_cards: Цветовая индикация карточек
   label_agile_4_more_features: И еще другие 4 функции...
-  label_agile_upgrade_to_pro: 'Обновитесь до PRO версии чтобы:'
+  label_agile_upgrade_to_pro: "Обновитесь до PRO версии чтобы:"
 
   #1.3.10
   label_agile_hide_closed_issues_data: Скрывать данные закрытых задач
@@ -123,7 +123,7 @@ ru:
   label_agile_board_columns: Столбцы доски
   lable_agile_wip_limit_exceeded: Превышен лимит по задачам в данном столбце
   label_agile_wip_limit: Ограничение по кол-ву задач в столбце
-  label_agile_add_new_issue: '+ НОВАЯ ЗАДАЧА'
+  label_agile_add_new_issue: "+ НОВАЯ ЗАДАЧА"
   label_agile_allow_create_cards: Создавать новые задачи на доске
   label_agile_auto_assign_on_move: Автоназначение при перетаскивании
   text_agile_create_issue_error: Произошла ошибка при создании задачи
@@ -142,6 +142,7 @@ ru:
   label_agile_sprint_name: Название
   label_agile_sprint_description: Описание
   label_agile_sprint_status: Статус
+  label_agile_sprint_sharing: Совместное использование
   label_agile_sprint_start_date: Дата начала
   label_agile_sprint_end_date: Дата окончания
   label_agile_sprint_new: Новый спринт
@@ -179,7 +180,6 @@ ru:
 
   label_agile_edit_issue: Изменить задачу
 
-
   label_agile_board_type: Тип доски
   label_agile_board_type_kanban: Kanban доска
   label_agile_board_type_scrum: Scrum доска
@@ -189,9 +189,12 @@ ru:
   label_agile_board_totals_spent_time: Потраченное время
   label_agile_board_totals_percent_done: Готовность (%)
   label_agile_board_totals_velocity: Скорость закрытия
+  label_agile_board_totals_description: Описание спринта
 
   label_agile_sprint_list_active: Активные спринты
-  label_agile_sprint_list_open: Следующие спринты
+  label_agile_sprint_list_future: Следующие спринты
+  label_agile_sprint_list_old: Прошлые спринты
+  label_agile_sprint_assigned_sprint: Назначенный спринт
 
   label_agile_moving_average: Скользящая средняя
 
@@ -210,3 +213,20 @@ ru:
   label_agile_no_sprint_issues: Задачи без спринта
   field_closed_sprints: Закрытые спринты
   field_closed_versions: Закрытые версии
+  label_allow_ovelapping_sprints: Пересекающиеся спринты
+
+  label_agile_sprint_sharing_none: Без совместного использования
+  label_agile_sprint_sharing_descendants: С подпроектами
+  label_agile_sprint_sharing_hierarchy: С иерархией проектов
+  label_agile_sprint_sharing_tree: С деревом проектов
+  label_agile_sprint_sharing_system: Со всеми проектами
+
+  label_agile_action_not_available: Действие недоступно
+  label_agile_general: Общие
+  label_agile_hidden: Дополнительные
+
+  label_chart_future_data: Показывать расчетные данные на графиках
+  label_agile_charts_work_partially_closed: Частично закрыто
+
+  label_use_web_sockets: Real-time доски
+  label_agile_status_deleted: "Удален"

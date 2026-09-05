@@ -1,7 +1,7 @@
 # This file is a part of Redmin Agile (redmine_agile) plugin,
 # Agile board plugin for redmine
 #
-# Copyright (C) 2011-2020 RedmineUP
+# Copyright (C) 2011-2026 RedmineUP
 # http://www.redmineup.com/
 #
 # redmine_agile is free software: you can redistribute it and/or modify
@@ -22,11 +22,15 @@ module RedmineAgile
     class ControllerIssueHook < Redmine::Hook::ViewListener
 
       def controller_issues_edit_before_save(context={})
-        add_agile_journal_details(context)
+        add_agile_journal_details(context) unless context[:controller].api_request?
       end
 
       def controller_issues_bulk_edit_before_save(context={})
-        add_agile_journal_details(context)
+        add_agile_journal_details(context) unless context[:controller].api_request?
+      end
+
+      def controller_issues_new_after_save(context={})
+        notify_web_socket_services(context) unless context[:controller].api_request?
       end
 
       private
@@ -44,6 +48,12 @@ module RedmineAgile
           :old_value => old_sp,
           :value => new_sp)
         end
+
+      end
+
+      def notify_web_socket_services(context)
+        context[:controller].retrieve_agile_query_from_session
+        context[:controller].web_socket_service_create(context[:params], context[:issue], { project: context[:issue].project })
       end
     end
   end

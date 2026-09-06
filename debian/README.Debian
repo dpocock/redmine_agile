@@ -65,7 +65,12 @@ Errno::EACCES: Permission denied @ rb_sysopen - /usr/share/redmine/db/schema.rb 
 
      sudo dpkg-reconfigure redmine
 
-4. In the browser, log in to Redmine and go to
+4. Restart the Redmine process or the web server hosting Redmine,
+   for example:
+
+     systemctl restart apache2
+
+5. In the browser, log in to Redmine and go to
 
      Administration -> Plugins -> Redmine Agile Plugin -> Configure
 
@@ -73,16 +78,16 @@ Errno::EACCES: Permission denied @ rb_sysopen - /usr/share/redmine/db/schema.rb 
 
    If an error page appears, check /var/log/redmine/${INSTANCE}/production.log
 
-5. Select one of your projects in Redmine (or create one), go to
+6. Select one of your projects in Redmine (or create one), go to
 
      Settings -> Modules
 
    Put a tick next to 'Agile' and click 'Save'
 
-6. When you are looking at that project, you should see the Agile tab,
+7. When you are looking at that project, you should see the Agile tab,
    click the Agile tab to see the agile board.
 
-7. On the main Project list page, click the Agile tab.  The list
+8. On the main Project list page, click the Agile tab.  The list
    of all issues in all projects appears in an agile / Kanban board.
 
 Dependencies

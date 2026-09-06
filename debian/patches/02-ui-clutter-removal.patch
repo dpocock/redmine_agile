@@ -1,0 +1,12 @@
+diff --git a/app/views/agile_boards/_index.html.erb b/app/views/agile_boards/_index.html.erb
+--- a/app/views/agile_boards/_index.html.erb
++++ b/app/views/agile_boards/_index.html.erb
+@@ -85,8 +85,6 @@
+ 
+ <% content_for :sidebar do %>
+  
+-  <%= render :partial => 'upgrade_to_pro' %>
+- 
+   <%= render :partial => 'issues_links' %>
+   <% if @project && @project.assignable_users.any? %>
+     <%= render :partial => 'members' %>

@@ -4,4 +4,5 @@ config          /usr/share/redmine/plugins/redmine_agile
 db              /usr/share/redmine/plugins/redmine_agile
 lib             /usr/share/redmine/plugins/redmine_agile
 test            /usr/share/redmine/plugins/redmine_agile
+Gemfile         /usr/share/redmine/plugins/redmine_agile
 init.rb         /usr/share/redmine/plugins/redmine_agile

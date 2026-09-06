@@ -1,3 +1,9 @@
+redmine-plugin-agile (1.7.0-1) unstable; urgency=medium
+
+  * New upstream release.
+
+ -- Daniel Pocock <daniel@pocock.pro>  Sun, 06 Sep 2026 15:09:45 +0200
+
 redmine-plugin-agile (1.5.4+p1-2) unstable; urgency=medium
 
   * Initial release (Closes: #nnnn)

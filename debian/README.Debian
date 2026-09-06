@@ -1,28 +1,111 @@
 
-1. Reconfigure the redmine package and it should make the plugin
-   available in all instances:
+
+Installing or Upgrading the plugin
+----------------------------------
+
+1. If you are upgrading Redmine from a version before 6.0, or if
+   this is a new installation of the plugin, please see the
+   Debian Redmine package maintainer's notes about the new
+   mechanism for sharing plugins between multiple Redmine instances
+   on the same host.
+
+   In particular, it is necessary to symlink the plugin into the
+   /var/... tree for each instance where the plugin should be
+   available.
+
+     for INSTANCE in instance1 instance2 instance5 ;
+     do
+       ln -s /usr/share/redmine/plugins/redmine_agile \
+              /var/lib/redmine/${INSTANCE}/plugins/
+     done
+
+2. After creating the symlinks, it is necessary to install or
+   upgrade the database schema for each instance.  For example,
+   for instances named instance1, instance2 and instance5:
+
+     cd /usr/share/redmine
+     sudo -u www-data \
+       REDMINE_INSTANCE=instance1 \
+       RAILS_ENV=production \
+       rake redmine:plugins \
+       NAME=redmine_agile
+
+     sudo -u www-data \
+       REDMINE_INSTANCE=instance2 \
+       RAILS_ENV=production \
+       rake redmine:plugins \
+       NAME=redmine_agile
+
+     sudo -u www-data \
+       REDMINE_INSTANCE=instance5 \
+       RAILS_ENV=production \
+       rake redmine:plugins \
+       NAME=redmine_agile
+
+   After each schema update, the script attempts to dump a copy of the schema
+   to a file but it is unable to do so due to write permissions.  Nonetheless,
+   the schema has been updated correctly and the developers have recommended
+   people ignore the error for now:
+
+root@myhost:/usr/share/redmine# sudo -u www-data \
+       REDMINE_INSTANCE=instance1 \
+       RAILS_ENV=production \
+       rake redmine:plugins \
+       NAME=redmine_agile
+`/var/www` is not writable.
+Bundler will use `/tmp/bundlerXXXXXXX' as your home directory temporarily.
+** Invoke redmine:plugins (first_time)
+.....
+** Execute db:schema:dump
+rake aborted!
+Errno::EACCES: Permission denied @ rb_sysopen - /usr/share/redmine/db/schema.rb (Errno::EACCES)
+
+
+3. Reconfigure the Redmine package:
 
      sudo dpkg-reconfigure redmine
 
-2. In the browser, log in to Redmine and go to
+4. In the browser, log in to Redmine and go to
 
-     Administration -> Plugins -> Redmine Agile Plugin - Configure
+     Administration -> Plugins -> Redmine Agile Plugin -> Configure
 
    Or browse to https://${YOUR_REDMINE_URL}/settings/plugin/redmine_agile
 
-   If an error page appears, check /var/log/redmine/default/production.log
+   If an error page appears, check /var/log/redmine/${INSTANCE}/production.log
 
-3. Select one of your projects in Redmine (or create one), go to
+5. Select one of your projects in Redmine (or create one), go to
 
      Settings -> Modules
 
    Put a tick next to 'Agile' and click 'Save'
 
-4. Now you should see the 'Agile' tab, click it to see the agile board.
+6. When you are looking at that project, you should see the Agile tab,
+   click the Agile tab to see the agile board.
 
-5. On the main Project list page, click 'View All Issues'.  The list
-   of all issues in all projects appears.  On the right hand side-bar,
-   click the 'Agile Board' link.
+7. On the main Project list page, click the Agile tab.  The list
+   of all issues in all projects appears in an agile / Kanban board.
+
+Dependencies
+------------
+
+The ruby-redmine-crm library Gem is now obsolete.  It is superceded by the
+ruby-redmineup Gem.  The Debian packaging automatically removes the old
+ruby-redmine-crm and installs the new ruby-redmineup when installing
+redmine-plugin-agile 1.7.0 or later.
+
+The redmineup Gem library states that it requires ruby-liquid version < 5.0
+but redmine_agile plugin seems to work with liquid 5.4.0 installed.
+Therefore, the ruby-redmineup library package has been patched to allow
+liquid < 6.0
+
+    (legacy) redmine_crm.gemspec (v0.0.63) specifies liquid < 2.6.4
+
+    redmineup.gemspec (v1.1.2) specifies liquid < 5.0
+
+    redmine_agile plugin (Debian package: redmine-plugin-agile)
+       no liquid version specified
+       Redmineup::Liquid used from
+             redmine_agile/lib/redmine_agile/patches/issue_drop_patch.rb
 
 Resources
 ---------

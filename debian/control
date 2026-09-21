@@ -1,6 +1,7 @@
 Source: redmine-plugin-agile
 Section: ruby
 Priority: optional
+Uploaders: Daniel Pocock <daniel@pocock.pro>
 Maintainer: Debian Ruby Extras Maintainers <pkg-ruby-extras-maintainers@lists.alioth.debian.org>
 Build-Depends: debhelper-compat (= 13),
                gem2deb,

@@ -3,21 +3,19 @@ Upstream-Name: redmine_agile
 Source: https://www.redmine.org/plugins/redmine_agile
 
 Files: *
-Copyright: <years> <put author's name and email here>
-           <years> <likewise for another author>
-License: GPL-2+ (FIXME)
+Copyright: 2011, Kirill Bezrukov
+License: GPL-2
 
 Files: debian/*
-Copyright: 2018  <>
-License: GPL-2+ (FIXME)
+Copyright: 2018, Daniel Pocock https://danielpocock.com
+License: GPL-2
 Comment: the Debian packaging is licensed under the same terms as the original package.
 
-License: GPL-2+ (FIXME)
+License: GPL-2
  This program is free software; you can redistribute it
  and/or modify it under the terms of the GNU General Public
- License as published by the Free Software Foundation; either
- version 2 of the License, or (at your option) any later
- version.
+ License as published by the Free Software Foundation;
+ version 2.
  .
  This program is distributed in the hope that it will be
  useful, but WITHOUT ANY WARRANTY; without even the implied

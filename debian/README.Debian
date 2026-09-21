@@ -3,92 +3,38 @@
 Installing or Upgrading the plugin
 ----------------------------------
 
-1. If you are upgrading Redmine from a version before 6.0, or if
-   this is a new installation of the plugin, please see the
-   Debian Redmine package maintainer's notes about the new
-   mechanism for sharing plugins between multiple Redmine instances
-   on the same host.
+If you are upgrading Redmine from a version before 6.0, or if
+this is a new installation of the plugin, please see the
+Debian Redmine package maintainer's notes about the new
+mechanism for sharing plugins between multiple Redmine instances
+on the same host.
 
-   In particular, it is necessary to symlink the plugin into the
-   /var/... tree for each instance where the plugin should be
-   available.
+In particular, it is necessary to symlink the plugin into the
+/var/... tree for each instance where the plugin should be
+available.  See the general details for plugin installation below.
 
-     for INSTANCE in instance1 instance2 instance5 ;
-     do
-       ln -s /usr/share/redmine/plugins/redmine_agile \
-              /var/lib/redmine/${INSTANCE}/plugins/
-     done
+After following the plugin installation procedure (below), follow
+these steps specific to the Agile plugin:
 
-2. After creating the symlinks, it is necessary to install or
-   upgrade the database schema for each instance.  For example,
-   for instances named instance1, instance2 and instance5:
-
-     cd /usr/share/redmine
-     sudo -u www-data \
-       REDMINE_INSTANCE=instance1 \
-       RAILS_ENV=production \
-       rake redmine:plugins \
-       NAME=redmine_agile
-
-     sudo -u www-data \
-       REDMINE_INSTANCE=instance2 \
-       RAILS_ENV=production \
-       rake redmine:plugins \
-       NAME=redmine_agile
-
-     sudo -u www-data \
-       REDMINE_INSTANCE=instance5 \
-       RAILS_ENV=production \
-       rake redmine:plugins \
-       NAME=redmine_agile
-
-   After each schema update, the script attempts to dump a copy of the schema
-   to a file but it is unable to do so due to write permissions.  Nonetheless,
-   the schema has been updated correctly and the developers have recommended
-   people ignore the error for now:
-
-root@myhost:/usr/share/redmine# sudo -u www-data \
-       REDMINE_INSTANCE=instance1 \
-       RAILS_ENV=production \
-       rake redmine:plugins \
-       NAME=redmine_agile
-`/var/www` is not writable.
-Bundler will use `/tmp/bundlerXXXXXXX' as your home directory temporarily.
-** Invoke redmine:plugins (first_time)
-.....
-** Execute db:schema:dump
-rake aborted!
-Errno::EACCES: Permission denied @ rb_sysopen - /usr/share/redmine/db/schema.rb (Errno::EACCES)
-
-
-3. Reconfigure the Redmine package:
-
-     sudo dpkg-reconfigure redmine
-
-4. Restart the Redmine process or the web server hosting Redmine,
-   for example:
-
-     systemctl restart apache2
-
-5. In the browser, log in to Redmine and go to
+In the browser, log in to Redmine and go to
 
      Administration -> Plugins -> Redmine Agile Plugin -> Configure
 
-   Or browse to https://${YOUR_REDMINE_URL}/settings/plugin/redmine_agile
+Or browse to https://${YOUR_REDMINE_URL}/settings/plugin/redmine_agile
 
-   If an error page appears, check /var/log/redmine/${INSTANCE}/production.log
+If an error page appears, check /var/log/redmine/${INSTANCE}/production.log
 
-6. Select one of your projects in Redmine (or create one), go to
+Select one of your projects in Redmine (or create one), go to
 
      Settings -> Modules
 
-   Put a tick next to 'Agile' and click 'Save'
+Put a tick next to 'Agile' and click 'Save'
 
-7. When you are looking at that project, you should see the Agile tab,
-   click the Agile tab to see the agile board.
+When you are looking at that project, you should see the Agile tab,
+click the Agile tab to see the agile board.
 
-8. On the main Project list page, click the Agile tab.  The list
-   of all issues in all projects appears in an agile / Kanban board.
+On the main Project list page, click the Agile tab.  The list
+of all issues in all projects appears in an agile / Kanban board.
 
 Dependencies
 ------------
@@ -117,4 +63,173 @@ Resources
 
 https://wiki.debian.org/Redmine
 https://wiki.debian.org/Teams/Ruby/Packaging
+
+
+
+General notes about installing plugins on Debian
+------------------------------------------------
+
+  After installing new plugins, it is necessary to run the Rake command
+to update Redmine database schemas on each instance of Redmine where
+you use the plugin.
+
+  Debian's Redmine packaging supports multiple instances of Redmine on the
+same host.  These are the exact steps:
+
+1) Install the plugin with apt
+
+2) Create a symlink for each ${INSTANCE} from
+
+      /var/lib/redmine/${INSTANCE}/plugins/
+
+          pointing to /usr/share/redmine/plugins/${THIS_PLUGIN}
+
+   Example command:
+
+      ln -s /usr/share/redmine/plugins/${THIS_PLUGIN} \
+         /var/lib/redmine/${INSTANCE}/plugins/
+
+3) Ensure all per-instance directories have been created correctly
+   under /var/lib/redmine/${INSTANCE}/
+
+   Using the Debian script to create instances should do everything
+   correctly.  For example:
+
+      /usr/share/redmine/bin/redmine-instances create test01
+
+4) Ensure all per-instance directories have the correct owner and
+   permissions.  Some directories, such as the cache directory for
+   each instance, must be writeable by the user running the Redmine
+   process.
+   
+   On Apache2 / Passenger-based installations, the www-data
+   user must be able to write to the cache directory
+
+   There appears to be some confusion about which directory should be used.
+   The exact directory names have varied in different versions of the
+   Debian Redmine multi-tenancy packaging scheme.
+
+   Older versions of Redmine used an Alias or similar directive
+   in the web server VirtualHost configuration to map /assets/ or
+   /plugin_assets/ into the web site.  Please check carefully whether
+   these Alias directives are correct or whether they should be
+   removed from the web server configuration completely depending
+   on the Redmine version.
+
+   An example command to ensure permissions are correct:
+
+     chown -R www-data:www-data \
+          /var/cache/redmine/${INSTANCE}/assets                \
+          /var/cache/redmine/${INSTANCE}/assets/plugin_assets  \
+          /var/cache/redmine/${INSTANCE}/plugin_assets
+
+5) Run the Rake command with the name of the Instance, e.g.
+
+      cd /usr/share/redmine && sudo -u www-data \
+          RAILS_ENV=production \
+          REDMINE_INSTANCE=${INSTANCE} \
+          SCHEMA=/dev/null \
+              rake redmine:plugins
+
+6) Run the Rake command for plugin_assets:
+
+      cd /usr/share/redmine && sudo -u www-data \
+          RAILS_ENV=production \
+          REDMINE_INSTANCE=${INSTANCE} \
+          SCHEMA=/dev/null \
+              rake assets:precompile
+
+7) Re-run the Debian package maintainer script:
+
+      sudo dpkg-reconfigure redmine
+
+8) After doing the above steps for every Redmine instance where you
+   symlinked the plugin, restart the process where Redmine is hosted.
+   For example, restart Apache with
+
+       systemctl restart apache2
+
+9) Look at the Administration / Plugins list to verify the plugin
+   was detected by Redmine.
+
+10) Check /var/log/redmine/${INSTANCE}/production.log, the web server logs,
+   SQL database logs and system logs / journalctl for any errors
+   when you first start using the plugin.
+
+Reporting errors
+----------------
+
+Please report any errors in both the Redmine Forum and the
+Debian Bug Tracking System (BTS).  For example, to report
+a bug to Debian:
+
+         To: submit@bugs.debian.org
+         Subject: Redmine missing task_done.png
+
+         Message body:
+
+             Package: redmine
+             Version: 6.0.5+ds-1
+
+             I was looking at Redmine production.log and I saw errors
+             about a missing file task_done.png 
+
+
+Troubleshooting plugins on Debian
+---------------------------------
+
+  Make sure you have the latest version of the package from either
+debian.org or debify.org
+
+  Look at the JavaScript console in the web browser.
+
+  Look in the developer console of the web browser, network tab,
+to see if it is failing to retrieve any files.
+
+  Look at the /var/log/redmine/${INSTANCE}/production.log
+
+  Look for error responses (e.g. 404) in the web server access.log
+
+  Look for any errors in the web server error.log file
+
+  Look in the cache directories for each Redmine instance and verify the 
+JavaScript and CSS stylesheets were correctly copied from the plugin.
+There appears to be some confusion about which directory should be used.
+The exact directory names have varied in different versions of the
+Debian Redmine multi-tenancy packaging scheme.
+Look in each of these locations to verify the directory ownership,
+write permissions and presence of the files for the installed plugins.
+
+      ls /var/cache/redmine/${INSTANCE}/plugin_assets
+      ls /var/cache/redmine/${INSTANCE}/assets
+      ls /var/cache/redmine/${INSTANCE}/assets/plugin_assets
+
+  Read the instructions in /usr/share/doc/redmine/README.Debian.gz
+In particular, look for current instructions about plugins and
+the plugin_assets directory.
+
+  Review the web server configuration to see if there are any Alias
+directives or similar commands that impact the location of plugin-related
+files.  Some of these directives were created for older versions of
+Redmine and they may need to be revised or removed for the currently
+installed version.
+
+  Try using Rake task assets:reveal to study the list of
+files installed by plugins.
+
+  Try re-running Rake tasks assets:precompile and redmine:plugins:migrate
+to ensure plugin assets (files) and schema are correctly installed.
+
+  Use strace to see where Ruby is looking for the plugin_assets
+
+  Ask questions in the Redmine forum:
+
+    https://www.redmine.org/projects/redmine/boards
+
+Daniel Pocock,
+Debian Developer
+https://danielpocock.com
+
+Software Freedom Institute
+https://softwarefreedom.institute
 

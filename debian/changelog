@@ -6,18 +6,18 @@ redmine-plugin-agile (1.7.0-1) unstable; urgency=medium
 
 redmine-plugin-agile (1.5.4+p1-2) unstable; urgency=medium
 
-  * Initial release (Closes: #nnnn)
+  * add patch: hack for error redmine_agile.js estimatedHours
 
  -- Daniel Pocock <daniel@pocock.pro>  Wed, 12 Aug 2020 15:28:11 +0200
 
 redmine-plugin-agile (1.5.4+p1-1) unstable; urgency=medium
 
-  * Initial release (Closes: #nnnn)
+  * New upstream release.
 
  -- Daniel Pocock <daniel@pocock.pro>  Wed, 12 Aug 2020 15:28:11 +0200
 
 redmine-plugin-agile (1.4.5+p1-1) UNRELEASED; urgency=medium
 
-  * Initial release (Closes: #nnnn)
+  * Initial release.
 
  -- Daniel Pocock <daniel@pocock.pro>  Sun, 28 Jan 2018 10:56:45 +0000

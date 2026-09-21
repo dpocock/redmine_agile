@@ -3,7 +3,7 @@ Upstream-Name: redmine_agile
 Source: https://www.redmine.org/plugins/redmine_agile
 
 Files: *
-Copyright: 2011, Kirill Bezrukov
+Copyright: 2011, Kirill Bezrukov <support@redmineup.com>
 License: GPL-2
 
 Files: debian/*

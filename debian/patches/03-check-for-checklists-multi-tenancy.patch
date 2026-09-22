@@ -1,0 +1,13 @@
+diff --git a/lib/redmine_agile.rb b/lib/redmine_agile.rb
+index 01ba544..2c60eb5 100755
+--- a/lib/redmine_agile.rb
++++ b/lib/redmine_agile.rb
+@@ -104,7 +104,7 @@ module RedmineAgile
+     end
+ 
+     def use_checklist?
+-      @@chcklist_plugin_installed ||= Dir.exist?(File.join(Rails.root, 'plugins/redmine_checklists'))
++      @@chcklist_plugin_installed ||= ((defined? Setting.plugin_redmine_checklists) != nil)
+     end
+ 
+     def allow_create_card?
